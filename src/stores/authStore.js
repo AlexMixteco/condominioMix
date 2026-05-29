@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     estaAutenticado: (state) => !!state.token,
+    esAdmin: (state) => state.usuario?.rol === 'admin',
   },
 
   actions: {
@@ -32,6 +33,10 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('usuario', JSON.stringify(data.user))
 
         axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+
+        import('@/echo.js').then(({ default: echo }) => {
+      echo.options.auth.headers.Authorization = `Bearer ${data.token}`
+    })
 
       } catch (error) {
         this.error = error.response?.data?.message || 'Credenciales incorrectas'

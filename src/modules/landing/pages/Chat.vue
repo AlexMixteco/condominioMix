@@ -152,6 +152,9 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import echo from '@/echo.js'
 import { useAuthStore } from '@/stores/authStore.js'
+import { useNotificacionStore } from '@/stores/notificacionStore'
+const notificacionStore = useNotificacionStore()
+
 
 const authStore = useAuthStore()
 
@@ -161,12 +164,14 @@ const contenedor = ref(null)
 const cargando   = ref(true)
 
 onMounted(async () => {
+  notificacionStore.entrarAlChat()
   await cargarMensajes()
   conectarCanal()
   cargando.value = false
 })
 
 onUnmounted(() => {
+  notificacionStore.salirDelChat()
   echo.leaveChannel('chat.condominio')
 })
 
@@ -197,6 +202,7 @@ async function enviarMensaje() {
     user: authStore.usuario,
     created_at: new Date().toISOString(),
     pendiente: true,
+    
   }
   mensajes.value.push(temporal)
   contenido.value = ''
@@ -204,9 +210,12 @@ async function enviarMensaje() {
 
   try {
     await axios.post(
-      `${import.meta.env.VITE_API_URL}/mensajes`,
-      { contenido: texto }
-    )
+  `${import.meta.env.VITE_API_URL}/mensajes`,
+  {
+    contenido: texto,
+    en_chat: true
+  }
+)
     temporal.pendiente = false
   } catch {
     mensajes.value = mensajes.value.filter(m => m.id !== temporal.id)

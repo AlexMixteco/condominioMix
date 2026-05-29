@@ -15,6 +15,12 @@ const router = createRouter({
           component: HomePage,
         },
         {
+          path: 'admin',
+          name: 'admin',
+          component: () => import('@/modules/landing/pages/AdminPage.vue'),
+          meta: { rol: 'admin' }
+        },
+        {
           path: 'chat',
           name: 'chat',
           component: () => import('@/modules/landing/pages/Chat.vue'),
