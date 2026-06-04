@@ -6,11 +6,10 @@ const departamentos = ref([])
 const multas = ref([])
 const cargando = ref(true)
 const enviando = ref(false)
-const mensaje = ref('')
-const error = ref('')
-const vista = ref('multas') 
+const vista = ref('multas')
 const modalAbierto = ref(false)
 const multaEditando = ref(null)
+const alerta = ref(null) 
 
 const form = ref({
   departamento_id: null,
@@ -44,6 +43,11 @@ async function cargarMultas() {
   multas.value = data
 }
 
+function mostrarAlerta(tipo, mensaje) {
+  alerta.value = { tipo, mensaje }
+  setTimeout(() => alerta.value = null, 3500)
+}
+
 function abrirModal(multa = null) {
   if (multa) {
     multaEditando.value = multa
@@ -64,7 +68,6 @@ function abrirModal(multa = null) {
       fecha_limite: '',
     }
   }
-  error.value = ''
   modalAbierto.value = true
 }
 
@@ -75,12 +78,11 @@ function cerrarModal() {
 
 async function guardarMulta() {
   if (!form.value.departamento_id || !form.value.motivo || !form.value.monto) {
-    error.value = 'Departamento, motivo y monto son obligatorios'
+    mostrarAlerta('error', 'Departamento, motivo y monto son obligatorios')
     return
   }
 
   enviando.value = true
-  error.value = ''
 
   try {
     if (multaEditando.value) {
@@ -88,18 +90,16 @@ async function guardarMulta() {
         `${import.meta.env.VITE_API_URL}/multas/${multaEditando.value.id}`,
         form.value
       )
-      mensaje.value = 'Multa actualizada correctamente'
+      mostrarAlerta('exito', 'Multa actualizada correctamente')
     } else {
       await axios.post(`${import.meta.env.VITE_API_URL}/multas`, form.value)
-      mensaje.value = 'Multa creada y notificación enviada'
+      mostrarAlerta('exito', 'Multa creada y notificación enviada')
     }
 
     await cargarMultas()
     cerrarModal()
-
-    setTimeout(() => mensaje.value = '', 3000)
   } catch (e) {
-    error.value = 'Error guardando la multa'
+    mostrarAlerta('error', 'Error guardando la multa')
   } finally {
     enviando.value = false
   }
@@ -111,26 +111,24 @@ async function eliminarMulta(multa) {
   try {
     await axios.delete(`${import.meta.env.VITE_API_URL}/multas/${multa.id}`)
     await cargarMultas()
-    mensaje.value = 'Multa eliminada'
-    setTimeout(() => mensaje.value = '', 3000)
+    mostrarAlerta('exito', 'Multa eliminada correctamente')
   } catch (e) {
-    error.value = 'Error eliminando la multa'
+    mostrarAlerta('error', 'Error eliminando la multa')
   }
 }
 
 async function enviarNotificacion() {
   if (!formNotificacion.value.titulo || !formNotificacion.value.descripcion) {
-    error.value = 'El título y descripción son obligatorios'
+    mostrarAlerta('error', 'El título y descripción son obligatorios')
     return
   }
 
   if (!formNotificacion.value.para_todos && !formNotificacion.value.departamento_id) {
-    error.value = 'Selecciona un departamento o marca "Enviar a todos"'
+    mostrarAlerta('error', 'Selecciona un departamento o marca "Enviar a todos"')
     return
   }
 
   enviando.value = true
-  error.value = ''
 
   try {
     if (formNotificacion.value.para_todos) {
@@ -140,7 +138,6 @@ async function enviarNotificacion() {
         descripcion: formNotificacion.value.descripcion,
         url:         formNotificacion.value.url || null,
       })
-      mensaje.value = 'Notificación enviada a todos los residentes'
     } else {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/departamentos/${formNotificacion.value.departamento_id}/notificar`,
@@ -151,8 +148,9 @@ async function enviarNotificacion() {
           url:         formNotificacion.value.url || null,
         }
       )
-      mensaje.value = 'Notificación enviada al departamento'
     }
+
+    mostrarAlerta('exito', 'Notificación enviada correctamente')
 
     formNotificacion.value = {
       tipo: 'asamblea',
@@ -162,10 +160,8 @@ async function enviarNotificacion() {
       departamento_id: null,
       para_todos: false,
     }
-
-    setTimeout(() => mensaje.value = '', 3000)
   } catch (e) {
-    error.value = 'Error enviando la notificación'
+    mostrarAlerta('error', 'Error enviando la notificación')
   } finally {
     enviando.value = false
   }
@@ -173,9 +169,9 @@ async function enviarNotificacion() {
 
 function colorEstado(estado) {
   const colores = {
-    pendiente:  'bg-yellow-100 text-yellow-700',
-    pagada:     'bg-green-100 text-green-700',
-    cancelada:  'bg-gray-100 text-gray-600',
+    pendiente: 'bg-yellow-100 text-yellow-700',
+    pagada:    'bg-green-100 text-green-700',
+    cancelada: 'bg-gray-100 text-gray-600',
   }
   return colores[estado] || 'bg-gray-100 text-gray-600'
 }
@@ -187,28 +183,52 @@ function colorEstado(estado) {
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Panel de Administración</h1>
 
     
+<Transition name="alerta">
+  <div v-if="alerta"
+    class="fixed top-6 right-6 z-50 w-auto inline-flex items-center p-1 pe-2
+           text-sm rounded-full shadow-lg"
+    :class="alerta.tipo === 'exito'
+      ? 'bg-green-50 border border-green-200 text-green-700'
+      : 'bg-red-50 border border-red-200 text-red-700'">
+
+    <span class="py-0.5 px-2 rounded-full text-xs font-semibold"
+      :class="alerta.tipo === 'exito'
+        ? 'bg-green-200 text-green-800'
+        : 'bg-red-200 text-red-800'">
+      {{ alerta.tipo === 'exito' ? 'Éxito' : 'Error' }}
+    </span>
+
+
+    <div class="ms-2 text-sm">
+      {{ alerta.mensaje }}
+    </div>
+
+    
+    <svg class="w-4 h-4 ms-1 shrink-0" aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+        stroke-width="2" d="m9 5 7 7-7 7"/>
+    </svg>
+  </div>
+</Transition>
+
+    
     <div class="flex gap-2 mb-6">
       <button @click="vista = 'multas'"
         class="px-4 py-2 rounded-xl text-sm font-medium transition"
         :class="vista === 'multas'
           ? 'bg-orange-500 text-white'
           : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'">
-       Multas
+        Multas
       </button>
       <button @click="vista = 'notificaciones'"
         class="px-4 py-2 rounded-xl text-sm font-medium transition"
         :class="vista === 'notificaciones'
           ? 'bg-orange-500 text-white'
           : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'">
-         Notificaciones
+        Notificaciones
       </button>
     </div>
-
-    
-    <p v-if="mensaje" class="bg-green-50 text-green-600 border border-green-200
-       rounded-xl px-4 py-2 text-sm mb-4">
-    {{ mensaje }}
-    </p>
 
     
     <div v-if="vista === 'multas'">
@@ -228,7 +248,8 @@ function colorEstado(estado) {
         No hay multas registradas
       </div>
 
-      <div v-else class="flex flex-col gap-3">
+      <
+      <TransitionGroup name="lista" tag="div" class="flex flex-col gap-3">
         <div v-for="multa in multas" :key="multa.id"
           class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm
                  flex items-center justify-between gap-4">
@@ -267,7 +288,7 @@ function colorEstado(estado) {
             </button>
           </div>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
 
     
@@ -327,84 +348,133 @@ function colorEstado(estado) {
           </select>
         </div>
 
-        <p v-if="error" class="text-red-500 text-sm mb-4">{{ error }}</p>
-
         <button @click="enviarNotificacion" :disabled="enviando"
           class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl
-                 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed">
+                 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed
+                 flex items-center justify-center gap-2">
+          <svg v-if="enviando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
           {{ enviando ? 'Enviando...' : 'Enviar Notificación' }}
         </button>
       </div>
     </div>
 
     
-    <div v-if="modalAbierto"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <Transition name="modal">
+      <div v-if="modalAbierto"
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
 
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">
-          {{ multaEditando ? 'Editar multa' : 'Nueva multa' }}
-        </h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">
+            {{ multaEditando ? 'Editar multa' : 'Nueva multa' }}
+          </h3>
 
-        <div class="mb-4">
-          <label class="text-sm font-medium text-gray-600 mb-1 block">Departamento</label>
-          <select v-model="form.departamento_id"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400">
-            <option :value="null" disabled>Selecciona un departamento</option>
-            <option v-for="depa in departamentos" :key="depa.id" :value="depa.id">
-              {{ depa.depa }}
-            </option>
-          </select>
-        </div>
+          <div class="mb-4">
+            <label class="text-sm font-medium text-gray-600 mb-1 block">Departamento</label>
+            <select v-model="form.departamento_id"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400">
+              <option :value="null" disabled>Selecciona un departamento</option>
+              <option v-for="depa in departamentos" :key="depa.id" :value="depa.id">
+                {{ depa.depa }}
+              </option>
+            </select>
+          </div>
 
-        <div class="mb-4">
-          <label class="text-sm font-medium text-gray-600 mb-1 block">Motivo</label>
-          <input v-model="form.motivo" type="text"
-            placeholder="Ej: Ruido excesivo"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
-        </div>
+          <div class="mb-4">
+            <label class="text-sm font-medium text-gray-600 mb-1 block">Motivo</label>
+            <input v-model="form.motivo" type="text"
+              placeholder="Ej: Ruido excesivo"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+          </div>
 
-        <div class="mb-4">
-          <label class="text-sm font-medium text-gray-600 mb-1 block">Monto ($)</label>
-          <input v-model="form.monto" type="number" min="0" step="0.01"
-            placeholder="0.00"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
-        </div>
+          <div class="mb-4">
+            <label class="text-sm font-medium text-gray-600 mb-1 block">Monto ($)</label>
+            <input v-model="form.monto" type="number" min="0" step="0.01"
+              placeholder="0.00"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+          </div>
 
-        <div class="mb-4">
-          <label class="text-sm font-medium text-gray-600 mb-1 block">Estado</label>
-          <select v-model="form.estado"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400">
-            <option value="pendiente">Pendiente</option>
-            <option value="pagada">Pagada</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
-        </div>
+          <div class="mb-4">
+            <label class="text-sm font-medium text-gray-600 mb-1 block">Estado</label>
+            <select v-model="form.estado"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400">
+              <option value="pendiente">Pendiente</option>
+              <option value="pagada">Pagada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
 
-        <div class="mb-6">
-          <label class="text-sm font-medium text-gray-600 mb-1 block">
-            Fecha límite <span class="text-gray-400">(opcional)</span>
-          </label>
-          <input v-model="form.fecha_limite" type="date"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
-        </div>
+          <div class="mb-6">
+            <label class="text-sm font-medium text-gray-600 mb-1 block">
+              Fecha límite <span class="text-gray-400">(opcional)</span>
+            </label>
+            <input v-model="form.fecha_limite" type="date"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+          </div>
 
-        <p v-if="error" class="text-red-500 text-sm mb-4">{{ error }}</p>
-
-        <div class="flex gap-3">
-          <button @click="cerrarModal"
-            class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl
-                   text-sm font-medium hover:bg-gray-50 transition">
-            Cancelar
-          </button>
-          <button @click="guardarMulta" :disabled="enviando"
-            class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl
-                   text-sm font-medium transition disabled:opacity-40">
-            {{ enviando ? 'Guardando...' : multaEditando ? 'Actualizar' : 'Crear multa' }}
-          </button>
+          <div class="flex gap-3">
+            <button @click="cerrarModal"
+              class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl
+                     text-sm font-medium hover:bg-gray-50 transition">
+              Cancelar
+            </button>
+            <button @click="guardarMulta" :disabled="enviando"
+              class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl
+                     text-sm font-medium transition disabled:opacity-40
+                     flex items-center justify-center gap-2">
+              <svg v-if="enviando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+              {{ enviando ? 'Guardando...' : multaEditando ? 'Actualizar' : 'Crear multa' }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
 
   </div>
 </template>
+
+<style scoped>
+
+.alerta-enter-active,
+.alerta-leave-active {
+  transition: all 0.4s ease;
+}
+.alerta-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+.alerta-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.3s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+
+.lista-enter-active,
+.lista-leave-active {
+  transition: all 0.3s ease;
+}
+.lista-enter-from {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+.lista-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+</style>
