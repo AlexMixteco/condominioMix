@@ -28,6 +28,11 @@ const router = createRouter({
       ],
     },
     {
+        path: '/verificar-email/:id/:hash',
+        name: 'verificar-email',
+        component: () => import('@/auth/pages/VerificarEmailPage.vue'),
+      },
+    {
       path: '/auth',
       redirect: { name: 'login' },
       component: () => import('@/auth/layouts/Authlayout.vue'),
@@ -49,17 +54,26 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   const auth = useAuthStore()
 
+  const rutasPublicas = ['login', 'verificar-email']
+
+ 
+  if (rutasPublicas.includes(to.name)) {
+    return true 
+  }
+
   if (!auth.usuario && localStorage.getItem('token')) {
     auth.cargarUsuario()
   }
 
-  const rutasPublicas = ['login']
-
-  if (!rutasPublicas.includes(to.name) && !auth.estaAutenticado) {
+  if (!auth.estaAutenticado) {
     return { name: 'login' }
   }
 
   if (to.name === 'login' && auth.estaAutenticado) {
+    return { name: 'home' }
+  }
+
+  if (to.meta?.rol && auth.usuario?.rol !== to.meta.rol) {
     return { name: 'home' }
   }
 

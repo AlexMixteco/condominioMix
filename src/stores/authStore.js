@@ -17,33 +17,33 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(email, password) {
-      this.cargando = true
-      this.error = null
+  this.cargando = true
+  this.error = null
 
-      try {
-        const { data } = await axios.post(
-  `${import.meta.env.VITE_API_URL}/login`,
-  { email, password }
-)
+  try {
+    const { data } = await axios.post(
+      `${import.meta.env.VITE_API_URL}/login`,
+      { email, password }
+    )
 
-        this.usuario = data.user
-        this.token   = data.token
+    this.usuario = data.user
+    this.token   = data.token
 
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('usuario', JSON.stringify(data.user))
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('usuario', JSON.stringify(data.user))
 
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
 
-        import('@/echo.js').then(({ default: echo }) => {
+    import('@/echo.js').then(({ default: echo }) => {
       echo.options.auth.headers.Authorization = `Bearer ${data.token}`
     })
 
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Credenciales incorrectas'
-      } finally {
-        this.cargando = false
-      }
-    },
+  } catch (error) {
+    this.error = error.response?.data?.message || 'Credenciales incorrectas'
+  } finally {
+    this.cargando = false
+  }
+},
 
     cargarUsuario() {
       const token   = localStorage.getItem('token')
