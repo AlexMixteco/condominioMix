@@ -206,6 +206,54 @@ function abrirModalUsuario(usuario = null) {
   modalUsuarioAbierto.value = true
 }
 
+const modalPasswordAbierto = ref(false)
+const usuarioPassword = ref(null)
+const formPassword = ref({
+  password_nuevo: '',
+  password_nuevo_confirmation: '',
+})
+
+function abrirModalPassword(usuario) {
+  usuarioPassword.value = usuario
+  formPassword.value = {
+    password_nuevo: '',
+    password_nuevo_confirmation: '',
+  }
+  modalPasswordAbierto.value = true
+}
+
+function cerrarModalPassword() {
+  modalPasswordAbierto.value = false
+  usuarioPassword.value = null
+}
+
+async function cambiarPassword() {
+  if (!formPassword.value.password_nuevo) {
+    mostrarAlerta('error', 'La contraseña es obligatoria')
+    return
+  }
+
+  if (formPassword.value.password_nuevo !== formPassword.value.password_nuevo_confirmation) {
+    mostrarAlerta('error', 'Las contraseñas no coinciden')
+    return
+  }
+
+  enviando.value = true
+
+  try {
+    await axios.put(
+      `${import.meta.env.VITE_API_URL}/usuarios/${usuarioPassword.value.id}`,
+      { password: formPassword.value.password_nuevo }
+    )
+    mostrarAlerta('exito', 'Contraseña actualizada y sesiones cerradas')
+    cerrarModalPassword()
+  } catch (e) {
+    mostrarAlerta('error', 'Error actualizando la contraseña')
+  } finally {
+    enviando.value = false
+  }
+}
+
 function cerrarModalUsuario() {
   modalUsuarioAbierto.value = false
   usuarioEditando.value = null
@@ -487,6 +535,10 @@ function colorEstado(estado) {
               class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">
               Editar
             </button>
+            <button @click="abrirModalPassword(usuario)"
+              class="text-xs bg-yellow-50 text-yellow-600 hover:bg-yellow-100 px-3 py-1.5 rounded-lg transition">
+              Contraseña
+            </button>
             <button @click="eliminarUsuario(usuario)"
               class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
               Eliminar
@@ -625,6 +677,54 @@ function colorEstado(estado) {
         </div>
       </div>
     </Transition>
+
+   
+<Transition name="modal">
+  <div v-if="modalPasswordAbierto"
+    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+
+      <h3 class="text-lg font-semibold text-gray-800 mb-1">
+        Cambiar contraseña
+      </h3>
+      <p class="text-sm text-gray-500 mb-4">
+        {{ usuarioPassword?.name }} — {{ usuarioPassword?.email }}
+      </p>
+
+      <div class="mb-4">
+        <label class="text-sm font-medium text-gray-600 mb-1 block">Nueva contraseña</label>
+        <input v-model="formPassword.password_nuevo" type="password"
+          placeholder="Mínimo 8 caracteres"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+      </div>
+
+      <div class="mb-6">
+        <label class="text-sm font-medium text-gray-600 mb-1 block">Confirmar contraseña</label>
+        <input v-model="formPassword.password_nuevo_confirmation" type="password"
+          placeholder="Repite la contraseña"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+      </div>
+
+      <div class="flex gap-3">
+        <button @click="cerrarModalPassword"
+          class="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl
+                 text-sm font-medium hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+        <button @click="cambiarPassword" :disabled="enviando"
+          class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl
+                 text-sm font-medium transition disabled:opacity-40
+                 flex items-center justify-center gap-2">
+          <svg v-if="enviando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+          {{ enviando ? 'Guardando...' : 'Cambiar contraseña' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</Transition>
 
   </div>
 </template>

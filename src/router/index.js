@@ -44,6 +44,16 @@ const router = createRouter({
         },
       ],
     },
+        {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/auth/pages/ForgotPasswordPage.vue'),
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/auth/pages/ResetPasswordPage.vue'),
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: { name: 'login' },
@@ -54,7 +64,7 @@ const router = createRouter({
 router.beforeEach((to, from) => {
   const auth = useAuthStore()
 
-  const rutasPublicas = ['login', 'verificar-email']
+  const rutasPublicas = ['login', 'verificar-email', 'forgot-password', 'reset-password']
 
  
   if (rutasPublicas.includes(to.name)) {

@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', {
   try {
     const { data } = await axios.post(
       `${import.meta.env.VITE_API_URL}/login`,
-      { email, password }
+      { email, password, dispositivo: `${navigator.platform} - ${navigator.userAgent.split(')')[0].split('(')[1]}` }
     )
 
     this.usuario = data.user
