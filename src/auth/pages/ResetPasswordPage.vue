@@ -67,16 +67,16 @@ async function resetear() {
         <p class="text-sm text-gray-500 mt-1">Ingresa tu nueva contraseña.</p>
       </div>
 
-      <!-- Éxito -->
+      
       <div v-if="mensaje"
         class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm mb-4">
-        ✅ {{ mensaje }} Redirigiendo al login...
+         {{ mensaje }} Redirigiendo al login...
       </div>
 
-      <!-- Error -->
+      
       <div v-if="error"
         class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
-        ❌ {{ error }}
+         {{ error }}
       </div>
 
       <div v-if="!mensaje">

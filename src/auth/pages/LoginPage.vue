@@ -6,7 +6,7 @@
     </div>
 
     <form @submit="enviarFormulario" class="space-y-6">
-      <!-- Campo Correo -->
+      
       <div class="form-group">
         <label for="correo" class="form-label">Correo electrónico</label>
         <div class="input-container">
@@ -26,7 +26,7 @@
         </div>
       </div>
 
-      <!-- Campo Contraseña -->
+      
       <div class="form-group">
         <div class="flex justify-between items-center mb-2">
           <label for="contrasenia" class="form-label">Contraseña</label>
@@ -62,12 +62,12 @@
         </div>
       </div>
 
-      <!-- Error -->
+      
       <p v-if="auth.error" class="text-red-500 text-sm text-center">
         {{ auth.error }}
       </p>
 
-      <!-- Botón de Ingreso -->
+      
       <button
         type="submit"
         class="submit-button"
@@ -77,6 +77,13 @@
           {{ auth.cargando ? 'Entrando...' : 'Ingresar' }}
         </span>
       </button>
+
+      <div class="text-center mt-4">
+      <router-link :to="{ name: 'forgot-password' }"
+        class="text-sm text-gray-500 hover:text-gray-700 transition">
+        ¿Olvidaste tu contraseña?
+      </router-link>
+    </div>
     </form>
   </div>
 </template>
